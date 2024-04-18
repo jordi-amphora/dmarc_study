@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 import os
 import csv
 import os
+import pdb
 
 def write_to_csv(aggregated_data, output_file):
     """Writes aggregated data to a CSV file."""
@@ -61,7 +62,7 @@ def parse_dmarc_xml(file_path):
         count = row.find('count').text if row.find('count') is not None else 'Unknown'
         disposition = row.find('.//disposition').text if row.find('.//disposition') is not None else 'Unknown'
         dkim_pass = row.find('.//dkim').text if row.find('.//dkim') is not None else 'Unknown'
-        spf_result = row.find('.//spf/result').text if row.find('.//spf/result') is not None else 'Unknown'
+        spf_result = row.find('.//spf').text if row.find('.//spf') is not None else 'Unknown'
 
         record = {
             'source_ip': source_ip,
@@ -71,6 +72,7 @@ def parse_dmarc_xml(file_path):
             'spf_result': spf_result
         }
         records.append(record)
+    # pdb.set_trace()
 
     return {
         'version': version,
@@ -153,10 +155,10 @@ if __name__ == "__main__":
         output_dir = '../output_files'
         extract_attachments(mbox_path, output_dir)
         decompress_gz_files(output_dir)
-        data = aggregate_data(output_dir)
-        print("Aggregated Data:")
-        for report in data:
-            print(report)
+        # data = aggregate_data(output_dir)
+        # print("Aggregated Data:")
+        # for report in data:
+        #     print(report)
 
         data = aggregate_data(output_dir)
         output_file = '../output.csv'
