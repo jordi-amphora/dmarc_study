@@ -9,6 +9,7 @@ import os
 import csv
 import os
 import pdb
+import zipfile
 
 def write_to_csv(aggregated_data, output_file):
     """Writes aggregated data to a CSV file."""
@@ -103,6 +104,7 @@ def decompress_gz_files(input_dir):
     # Path object for the input directory
     input_path = Path(input_dir)
     
+    # print("processing gz files")
     # Iterate over all gzip files in the directory
     for gz_path in input_path.glob('*.gz'):
         # Define the output file path (same name without .gz)
@@ -112,20 +114,47 @@ def decompress_gz_files(input_dir):
         with gzip.open(gz_path, 'rb') as f_in, open(output_file_path, 'wb') as f_out:
             # Copy contents from gzip file to output file
             f_out.write(f_in.read())
-            print(f"Decompressed: {output_file_path}")
+            # print(f"Decompressed: {output_file_path}")
+        os.remove(gz_path)
+    # print("processing zip files")
+    # pdb.set_trace()
+    # Iterate over all gzip files in the directory
+    for zip_path in input_path.glob('*.zip'):
+        # Define the output file path (same name without .gz)
+        output_file_path = zip_path.with_suffix('')
+        # print(zip_path)
+        # print(output_file_path)
 
+        try:
+            # Open the gzip file and create the output file
+            with zipfile.ZipFile(zip_path, 'r') as zip_in:
+                zip_in.extractall('../output_files/')
+                # print(f"Decompressed: {output_file_path}")
+            os.remove(zip_path)
+        except Exception as e:
+            print("zip exception")
+            print(e)
+            with gzip.open(zip_path, 'rb') as f_in, open(f"{output_file_path}.xml", 'wb') as f_out:
+                # Copy contents from gzip file to output file
+                f_out.write(f_in.read())
+            # print(f"Decompressed: {output_file_path}}.xml")
+            os.remove(zip_path)
 
 def extract_attachments(mbox_path, output_dir):
     # Ensure output directory exists
-    print(f"start extract_attachments")
+    # print(f"start extract_attachments")
     if not os.path.isdir(output_dir):
-        print("creating output_dir")
+        # print("creating output_dir")
         os.makedirs(output_dir)
 
     # Open the MBOX file
     mbox = mailbox.mbox(mbox_path)
-
+    # [[part, part.get('Content-Disposition', None), part.get_filename() if part.get('Content-Disposition', None) and 'attachment' in part.get('Content-Disposition', None) else None] for part in message.walk()] 
     for message in mbox:
+        # pdb.set_trace()
+        # print([h[1] for h in message._headers if h[0] == "From"])
+        # print([h[1] for h in message._headers if h[0] == "Subject"])
+        # print([h[1] for h in message._headers if h[0] == "Date"])
         if message.is_multipart():
             for part in message.walk():
                 # Check if the part is an attachment
@@ -139,8 +168,25 @@ def extract_attachments(mbox_path, output_dir):
                         # Write the file out to disk
                         with open(file_path, 'wb') as file:
                             file.write(part.get_payload(decode=True))
-                        print(f"Extracted: {file_path}")
-
+                        # print(f"Extracted: {file_path}")
+        else:
+            # print("message is not multipart")
+            # print([h[1] for h in message._headers if h[0] == "From"])
+            # print([h[1] for h in message._headers if h[0] == "Subject"])
+            # print([h[1] for h in message._headers if h[0] == "Date"])
+            # pdb.set_trace()
+            # if len([m for m in message.walk()]):
+            try:    
+                for f in [m.get_filename() for m in message.walk() if 'attachment' in m.get('Content-Disposition')]:
+                    file_name = os.path.basename(f)
+                    file_path = os.path.join(output_dir, file_name)
+                    # Write the file out to disk
+                    with open(file_path, 'wb') as file:
+                        file.write(part.get_payload(decode=True))
+                    # print(f"Extracted: {file_path}")
+            except Exception as e:
+                print(e)
+                
 if __name__ == "__main__":
     input_dir = "../input_files"
     input_path = Path(input_dir)
@@ -163,7 +209,7 @@ if __name__ == "__main__":
         data = aggregate_data(output_dir)
         output_file = '../output.csv'
         write_to_csv(data, output_file)
-        print(f"Data has been written to {output_file}")
+        # print(f"Data has been written to {output_file}")
 
 
 
